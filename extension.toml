@@ -1,0 +1,11 @@
+id = "resterm"
+name = "Resterm"
+description = "Run .http and .rest requests in Zed with Resterm"
+version = "0.0.1"
+schema_version = 1
+authors = ["zce"]
+repository = "https://github.com/zce/zed-resterm"
+
+[grammars.http]
+repository = "https://github.com/feapps/tree-sitter-http"
+rev = "66e8d6559e2f2386b43574b1c565ebcdc213b4fe"
