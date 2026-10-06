@@ -8,6 +8,8 @@
     "allow_concurrent_runs": false,
     "reveal": "always",
     "hide": "never",
+    "show_summary": false,
+    "show_command": false,
     "save": "current",
     "tags": ["resterm-request"]
   },
@@ -20,6 +22,8 @@
     "allow_concurrent_runs": false,
     "reveal": "always",
     "hide": "never",
+    "show_summary": false,
+    "show_command": false,
     "save": "current"
   }
 ]
