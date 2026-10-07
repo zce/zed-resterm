@@ -1,8 +1,7 @@
 [
   {
     "label": "Resterm: Run request",
-    "command": "resterm",
-    "args": ["run", "--line", "$ZED_ROW", "$ZED_FILE"],
+    "command": "printf '%s' \"$ZED_CUSTOM_source\" | resterm run --line \"$ZED_ROW\" -",
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -10,7 +9,7 @@
     "hide": "never",
     "show_summary": false,
     "show_command": false,
-    "save": "current",
+    "save": "none",
     "tags": ["resterm-request"]
   },
   {
