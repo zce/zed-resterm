@@ -1,5 +1,5 @@
 id = "resterm"
-name = "Resterm"
+name = "resterm"
 description = "Run .http and .rest requests in Zed with Resterm"
 version = "0.0.1"
 schema_version = 1
