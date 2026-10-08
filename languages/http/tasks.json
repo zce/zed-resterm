@@ -29,7 +29,7 @@
     "show_summary": false,
     "show_command": false,
     "save": "current",
-    "label": "Resterm: Run all requests",
+    "label": "Resterm",
     "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nstate_home=\"${XDG_STATE_HOME:-$HOME/.local/state}\"\nworkspace_key=$(printf '%s' \"$RESTERM_ROOT\" | cksum | tr ' ' '-')\nstate_dir=\"$state_home/zed-resterm/$workspace_key\"\nstate_file=\"$state_dir/environment\"\nselected_env=\nif [ -f \"$state_file\" ]; then\n  IFS= read -r selected_env < \"$state_file\" || { printf \"Could not read Resterm environment selection\\n\" >&2; exit 2; }\n  if [ -z \"$selected_env\" ]; then printf \"Empty Resterm environment selection\\n\" >&2; exit 2; fi\nfi\nif [ -n \"$selected_env\" ] && [ -z \"$env_file\" ]; then\n  printf \"Resterm: selected environment %s, but no environment file was found\\n\" \"$selected_env\" >&2\n  exit 2\nfi\nset -- run --all\nif [ -n \"$env_file\" ]; then set -- \"$@\" --env-file \"$env_file\"; fi\nif [ -n \"$selected_env\" ]; then\n  printf \"Environment: %s\\n\" \"$selected_env\" >&2\n  set -- \"$@\" --env \"$selected_env\"\nfi\nresterm \"$@\" \"$RESTERM_FILE\"",
     "env": {
       "RESTERM_FILE": "$ZED_FILE",
@@ -42,17 +42,20 @@
     "use_new_terminal": true,
     "allow_concurrent_runs": false,
     "reveal": "always",
-    "hide": "on_success",
+    "hide": "always",
     "show_summary": false,
     "show_command": false,
     "save": "none",
     "label": "Resterm: Switch Environment",
-    "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nstate_home=\"${XDG_STATE_HOME:-$HOME/.local/state}\"\nworkspace_key=$(printf '%s' \"$RESTERM_ROOT\" | cksum | tr ' ' '-')\nstate_dir=\"$state_home/zed-resterm/$workspace_key\"\nstate_file=\"$state_dir/environment\"\numask 077\npython3 -c \"$RESTERM_PICKER_CODE\" \"$env_file\" \"$state_file\"",
+    "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nstate_home=\"${XDG_STATE_HOME:-$HOME/.local/state}\"\nworkspace_key=$(printf '%s' \"$RESTERM_ROOT\" | cksum | tr ' ' '-')\nstate_dir=\"$state_home/zed-resterm/$workspace_key\"\nstate_file=\"$state_dir/environment\"\numask 077\nexec python3 -c \"$RESTERM_PICKER_CODE\" \"$env_file\" \"$state_file\"",
     "env": {
       "RESTERM_DIR": "$ZED_DIRNAME",
       "RESTERM_ROOT": "$ZED_WORKTREE_ROOT",
       "RESTERM_PICKER_CODE": "import curses\nimport json\nimport sys\nfrom pathlib import Path\n\nenv_file, state_file = map(Path, sys.argv[1:3])\nif not env_file.is_file():\n    sys.exit(\"Resterm: no environment file found\")\ntry:\n    data = json.loads(env_file.read_text(encoding=\"utf-8\"))\nexcept (OSError, ValueError) as exc:\n    sys.exit(f\"Resterm: cannot read environment file: {exc}\")\nif not isinstance(data, dict) or \"$groups\" in data:\n    sys.exit(\"Resterm: expected flat named environments (groups are not supported)\")\nnames = [\n    name for name, value in data.items()\n    if isinstance(value, dict) and not name.startswith(\"$\") and name.isprintable()\n]\nif not names:\n    sys.exit(\"Resterm: no named environments found\")\ncurrent = state_file.read_text(encoding=\"utf-8\").strip() if state_file.is_file() else \"\"\nitems = [\"Automatic\", *names]\n\ndef choose(screen):\n    curses.curs_set(0)\n    screen.keypad(True)\n    index = names.index(current) + 1 if current in names else 0\n    while True:\n        screen.erase()\n        height, width = screen.getmaxyx()\n        if height > 0 and width > 1:\n            screen.addnstr(0, 0, \"Resterm environment\", width - 1, curses.A_BOLD)\n            visible = max(1, height - 3)\n            offset = max(0, min(index - visible // 2, len(items) - visible))\n            for pos in range(offset, min(len(items), offset + visible)):\n                name = items[pos]\n                marker = \" *\" if (pos == 0 and not current) or name == current else \"\"\n                label = f\" {name}{marker}\"\n                if pos - offset + 1 < height:\n                    screen.addnstr(pos - offset + 1, 0, label, width - 1,\n                                     curses.A_REVERSE if pos == index else curses.A_NORMAL)\n            if height > 2:\n                screen.addnstr(height - 1, 0, \"Up/Down select · Enter confirm · Esc cancel\",\n                               width - 1)\n        screen.refresh()\n        key = screen.getch()\n        if key in (curses.KEY_UP, ord(\"k\")):\n            index = (index - 1) % len(items)\n        elif key in (curses.KEY_DOWN, ord(\"j\")):\n            index = (index + 1) % len(items)\n        elif key in (10, 13, curses.KEY_ENTER):\n            return index\n        elif key in (27, ord(\"q\")):\n            return None\n\nchoice = curses.wrapper(choose)\nif choice is None:\n    sys.exit(0)\nif choice == 0:\n    state_file.unlink(missing_ok=True)\nelse:\n    state_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)\n    state_file.write_text(items[choice] + \"\\n\", encoding=\"utf-8\")\n    state_file.chmod(0o600)\nprint(f\"Resterm environment: {items[choice]}\")"
     },
-    "reveal_target": "dock"
+    "reveal_target": "dock",
+    "shell": {
+      "program": "sh"
+    }
   }
 ]
