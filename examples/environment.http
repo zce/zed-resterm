@@ -1,0 +1,3 @@
+### Environment-based request
+GET {{baseUrl}}/get
+Accept: application/json

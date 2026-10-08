@@ -1,7 +1,7 @@
 [
   {
     "label": "Resterm: Run request",
-    "command": "printf '%s' \"$RESTERM_SOURCE\" | resterm run --line \"$RESTERM_LINE\" -",
+    "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nset -- run --line \"$RESTERM_LINE\"\nif [ -n \"$env_file\" ]; then\n  set -- \"$@\" --env-file \"$env_file\"\nfi\nprintf '%s' \"$RESTERM_SOURCE\" | resterm \"$@\" -",
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -15,17 +15,14 @@
     ],
     "env": {
       "RESTERM_SOURCE": "$ZED_CUSTOM_source",
-      "RESTERM_LINE": "$ZED_ROW"
+      "RESTERM_LINE": "$ZED_ROW",
+      "RESTERM_DIR": "$ZED_DIRNAME",
+      "RESTERM_ROOT": "$ZED_WORKTREE_ROOT"
     }
   },
   {
     "label": "Resterm: Run all requests",
-    "command": "resterm",
-    "args": [
-      "run",
-      "--all",
-      "$ZED_FILE"
-    ],
+    "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nset -- run --all\nif [ -n \"$env_file\" ]; then\n  set -- \"$@\" --env-file \"$env_file\"\nfi\nresterm \"$@\" \"$RESTERM_FILE\"",
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -33,6 +30,11 @@
     "hide": "never",
     "show_summary": false,
     "show_command": false,
-    "save": "current"
+    "save": "current",
+    "env": {
+      "RESTERM_FILE": "$ZED_FILE",
+      "RESTERM_DIR": "$ZED_DIRNAME",
+      "RESTERM_ROOT": "$ZED_WORKTREE_ROOT"
+    }
   }
 ]

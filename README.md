@@ -24,20 +24,28 @@ resterm --version
 
 Clone this repository, then in Zed run **zed: install dev extension** and select the repository root.
 
-Open a `.http` or `.rest` file and use the gutter run button next to a request. The extension passes the **current editor buffer**, including unsaved changes, through a task environment variable to Resterm stdin:
+Open a `.http` or `.rest` file and use the gutter run button next to a request. The extension passes the **current editor buffer**, including unsaved changes, through a task environment variable to Resterm stdin. It does **not** save the file.
 
-```sh
-printf '%s' "$RESTERM_SOURCE" | resterm run --line "$RESTERM_LINE" -
-```
+You can also open **task: spawn** and choose **Resterm: Run all requests**. This separate task saves the current file and runs all requests from disk.
 
-The task does not save the buffer. Passing the content as an environment variable (rather than expanding it into the shell command template) preserves JSON quotes and avoids interpreting request content as shell syntax.
+## Environment files
 
-You can also open **task: spawn** and choose **Resterm: Run all requests**. This separate task still saves the current file and runs it from disk.
+Both tasks look for an environment file, checking the source `.http` directory first, then the Zed worktree root. Within each directory, the precedence is:
 
-**Limitation:** Resterm currently treats stdin input as `stdin.http` at the workspace root, so relative body-file references may not resolve relative to the original `.http` file. The environment-variable transport also has platform size limits.
+1. `http-client.env.json` (JetBrains-compatible name)
+2. `rest-client.env.json`
+3. `resterm.env.json`
+
+When found, the task supplies `--env-file "<path>"` to Resterm. Resterm itself does not automatically discover `http-client.env.json`, but it can load it explicitly. Without a matching file, the normal Resterm CLI behavior remains unchanged.
+
+Resterm chooses the default named environment according to its own rules; this extension does not add an environment switch or silently select `prod`. To try this, open [examples/environment.http](examples/environment.http), which uses [examples/http-client.env.json](examples/http-client.env.json).
+
+Only one environment file is loaded; `http-client.private.env.json` is **not** merged automatically. That would require additional semantics beyond Resterm's single-environment-file support.
 
 ## Notes
 
 If another installed Zed extension also claims `.http` or `.rest`, disable it while testing to avoid language-association conflicts.
+
+The stdin-backed request runs with a logical `stdin.http` under the workspace root, so relative body-file references may not resolve relative to the original `.http` file. The environment-variable transport also has platform size limits.
 
 The HTTP grammar is pinned to [`feapps/tree-sitter-http`](https://github.com/feapps/tree-sitter-http), a small fork of `rest-nvim/tree-sitter-http` that fixes multiline query comments and tab-indented files.
