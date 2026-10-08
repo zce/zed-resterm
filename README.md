@@ -39,7 +39,7 @@ Both run tasks look for an environment file, checking the source `.http` directo
 
 When found, the task supplies `--env-file "<path>"` to Resterm. Resterm itself does not automatically discover `http-client.env.json`, but it can load it explicitly. Without a matching file, normal Resterm CLI behavior remains unchanged unless an explicit environment was selected.
 
-To switch environments, run **Resterm: Switch Environment** from Zed's **task: spawn** picker. The picker reads the available environment names **dynamically** from the discovered environment file, so no names are hard-coded. Enter the number beside an environment to select it; choose **0. Automatic** to clear the saved selection and use Resterm's default. The current selection is marked with `*`.
+To switch environments, run **Resterm: Switch Environment** from Zed's **task: spawn** picker. The picker reads the available environment names **dynamically** from the discovered environment file, so no names are hard-coded. Use **Up/Down** (or **j/k**) and **Enter** to select; **Esc** cancels. Select **Automatic** to clear the saved selection and use Resterm's default. The current selection is marked with `*`. The temporary picker tab closes automatically when the task succeeds.
 
 For direct access without opening the generic Task Picker, assign a shortcut in your Zed `keymap.json`:
 
@@ -48,15 +48,15 @@ For direct access without opening the generic Task Picker, assign a shortcut in 
   {
     "context": "Workspace && !Terminal",
     "bindings": {
-      "alt-e": ["task::Spawn", { "task_name": "Resterm: Switch Environment", "reveal_target": "center" }]
+      "alt-e": ["task::Spawn", { "task_name": "Resterm: Switch Environment", "reveal_target": "dock" }]
     }
   }
 ]
 ```
 
-Zed's extension API currently does **not** let third-party extensions register arbitrary Command Palette actions or native picker dialogs. This is a named Task invoked directly via Zed's built-in action, not an independently registered Command Palette command. The terminal picker uses Python 3's standard library (required only when switching environments, not when running requests).
+Zed's extension API currently does **not** let third-party extensions register arbitrary Command Palette actions or native picker dialogs. This is a named Task invoked directly via Zed's built-in action, not an independently registered Command Palette command. The temporary terminal picker uses Python 3's standard-library curses support (required only when switching environments, not when running requests).
 
-The choice applies to both gutter **Run request** and **Run all requests**. It is stored per worktree under `${XDG_STATE_HOME:-~/.local/state}/zed-resterm/` (keyed by the worktree path), not in the repository. Only the environment *name* is saved; secrets and variable values are not.
+The choice applies to both gutter **Run request** and **Run all requests**. Zed reuses task terminal tabs by their full task label, so regular gutter executions all share one **Resterm** output tab. The temporary environment picker closes on success (but stays open on failure). **Run all requests** has its own tab and distinct label to avoid ambiguity in Zed's task picker; Zed has no separate terminal-reuse key independent of the task label. It is stored per worktree under `${XDG_STATE_HOME:-~/.local/state}/zed-resterm/` (keyed by the worktree path), not in the repository. Only the environment *name* is saved; secrets and variable values are not.
 
 An explicitly selected environment that isn't in the environment file fails instead of silently choosing a different one. If no file was found, an explicit selection also fails. With **Automatic** (the initial state), Resterm chooses `dev`, `default`, or `local` if present, otherwise the first named environment. The picker handles flat named-environment files, not Resterm's `$groups` format. Verify the environment shown in the run output before executing mutating requests.
 
