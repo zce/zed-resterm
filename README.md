@@ -38,7 +38,7 @@ Both tasks look for an environment file, checking the source `.http` directory f
 
 When found, the task supplies `--env-file "<path>"` to Resterm. Resterm itself does not automatically discover `http-client.env.json`, but it can load it explicitly. Without a matching file, the normal Resterm CLI behavior remains unchanged.
 
-Resterm chooses the default named environment according to its own rules; this extension does not add an environment switch or silently select `prod`. To try this, open [examples/environment.http](examples/environment.http), which uses [examples/http-client.env.json](examples/http-client.env.json).
+Resterm chooses the default named environment according to its own rules; this extension does not add an environment picker or override that selection. Verify the active environment before executing mutating requests. To try this, open [examples/environment.http](examples/environment.http), which uses [examples/http-client.env.json](examples/http-client.env.json).
 
 Only one environment file is loaded; `http-client.private.env.json` is **not** merged automatically. That would require additional semantics beyond Resterm's single-environment-file support.
 
