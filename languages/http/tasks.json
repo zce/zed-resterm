@@ -1,7 +1,7 @@
 [
   {
     "label": "Resterm: Run request",
-    "command": "printf '%s' \"$ZED_CUSTOM_source\" | resterm run --line \"$ZED_ROW\" -",
+    "command": "printf '%s' \"$RESTERM_SOURCE\" | resterm run --line \"$RESTERM_LINE\" -",
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -10,12 +10,22 @@
     "show_summary": false,
     "show_command": false,
     "save": "none",
-    "tags": ["resterm-request"]
+    "tags": [
+      "resterm-request"
+    ],
+    "env": {
+      "RESTERM_SOURCE": "$ZED_CUSTOM_source",
+      "RESTERM_LINE": "$ZED_ROW"
+    }
   },
   {
     "label": "Resterm: Run all requests",
     "command": "resterm",
-    "args": ["run", "--all", "$ZED_FILE"],
+    "args": [
+      "run",
+      "--all",
+      "$ZED_FILE"
+    ],
     "cwd": "$ZED_WORKTREE_ROOT",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
