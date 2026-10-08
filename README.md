@@ -10,6 +10,7 @@ The extension owns the editor integration only. Resterm remains the request pars
 - JSON and XML body injection
 - runnable gutter action for each request
 - `Resterm: Run all requests` task
+- switchable per-workspace environments through Zed's Task Picker
 - no Rust, LSP, Node.js, or bundled sidecar
 
 ## Requirements
@@ -30,15 +31,26 @@ You can also open **task: spawn** and choose **Resterm: Run all requests**. This
 
 ## Environment files
 
-Both tasks look for an environment file, checking the source `.http` directory first, then the Zed worktree root. Within each directory, the precedence is:
+Both run tasks look for an environment file, checking the source `.http` directory first, then the Zed worktree root. Within each directory, the precedence is:
 
 1. `http-client.env.json` (JetBrains-compatible name)
 2. `rest-client.env.json`
 3. `resterm.env.json`
 
-When found, the task supplies `--env-file "<path>"` to Resterm. Resterm itself does not automatically discover `http-client.env.json`, but it can load it explicitly. Without a matching file, the normal Resterm CLI behavior remains unchanged.
+When found, the task supplies `--env-file "<path>"` to Resterm. Resterm itself does not automatically discover `http-client.env.json`, but it can load it explicitly. Without a matching file, normal Resterm CLI behavior remains unchanged unless an explicit environment was selected.
 
-Resterm chooses the default named environment according to its own rules; this extension does not add an environment picker or override that selection. Verify the active environment before executing mutating requests. To try this, open [examples/environment.http](examples/environment.http), which uses [examples/http-client.env.json](examples/http-client.env.json).
+To choose a named environment, open a `.http` file and run **task: spawn**, then pick:
+
+- **Resterm: Use dev**
+- **Resterm: Use staging**
+- **Resterm: Use prod**
+- **Resterm: Use Automatic** — clear the saved selection and let Resterm choose its default
+
+The choice applies to both gutter **Run request** and **Run all requests**. It is stored per worktree under `${XDG_STATE_HOME:-~/.local/state}/zed-resterm/` (keyed by the worktree path), not in the repository. Only the environment *name* is saved; secrets and variable values are not.
+
+An explicitly selected environment that isn't in the environment file fails instead of silently choosing a different one. If no file was found, an explicit selection also fails. When set to **Automatic** (the initial state), Resterm chooses `dev`, `default`, or `local` if present, otherwise the first named environment. Take care with mutating requests and verify the environment shown in the run output.
+
+See [examples/environment.http](examples/environment.http) and [examples/http-client.env.json](examples/http-client.env.json).
 
 Only one environment file is loaded; `http-client.private.env.json` is **not** merged automatically. That would require additional semantics beyond Resterm's single-environment-file support.
 
