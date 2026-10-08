@@ -1,73 +1,74 @@
 # Zed Resterm
 
-A thin Zed extension for [Resterm](https://github.com/unkn0wn-root/resterm).
-
-The extension owns the editor integration only. Resterm remains the request parser and execution engine.
+A thin [Zed](https://zed.dev) extension for [Resterm](https://github.com/unkn0wn-root/resterm). Resterm owns request parsing and execution; the extension provides syntax highlighting and editor tasks. No Rust, LSP, or bundled sidecar.
 
 ## Features
 
-- `.http` and `.rest` syntax highlighting
-- JSON and XML body injection
-- runnable gutter action for each request
-- `Resterm: Run all requests` task
-- dynamic per-worktree environment selection through Zed's Task Picker or a named-task keybinding
-- no Rust, LSP, Node.js, or bundled sidecar
+- `.http` / `.rest` highlighting, with JSON and XML body injection
+- Gutter action to execute the current request from the **unsaved editor buffer**
+- Run every request in the saved file
+- Switch environments dynamically using the names in the loaded environment file
+- **One reusable `Resterm` terminal tab** for all three operations
 
 ## Requirements
 
-Install `resterm` and make sure it is available on `PATH`:
+Install `resterm` on your `PATH`:
 
 ```sh
 resterm --version
 ```
 
+Environment switching additionally requires Python 3 with `curses` support; running requests does not.
+
 ## Install for development
 
-Clone this repository, then in Zed run **zed: install dev extension** and select the repository root.
+Clone this repository and in Zed run **zed: install dev extension** on its root.
 
-Open a `.http` or `.rest` file and use the gutter run button next to a request. The extension passes the **current editor buffer**, including unsaved changes, through a task environment variable to Resterm stdin. It does **not** save the file.
+Open a `.http` or `.rest` file. The gutter run button executes the request with the current unsaved editor text. The task passes the editor buffer through an environment variable to Resterm stdin; it does not save the file.
 
-You can also open **task: spawn** and choose **Resterm: Run all requests**. This separate task saves the current file and runs all requests from disk.
+All three tasks intentionally have the **same label** (`Resterm`) so Zed reuses their terminal tab. Their distinct **tags** identify each operation:
 
-## Environment files
+| Tag | Action |
+| --- | --- |
+| `resterm-request` | Run request at the gutter (bound automatically) |
+| `resterm-all` | Save the current file and run all requests |
+| `resterm-switch` | Choose an environment from the current environment file |
 
-Both run tasks look for an environment file, checking the source `.http` directory first, then the Zed worktree root. Within each directory, the precedence is:
-
-1. `http-client.env.json` (JetBrains-compatible name)
-2. `rest-client.env.json`
-3. `resterm.env.json`
-
-When found, the task supplies `--env-file "<path>"` to Resterm. Resterm itself does not automatically discover `http-client.env.json`, but it can load it explicitly. Without a matching file, normal Resterm CLI behavior remains unchanged unless an explicit environment was selected.
-
-To switch environments, run **Resterm: Switch Environment** from Zed's **task: spawn** picker. The picker reads the available environment names **dynamically** from the discovered environment file, so no names are hard-coded. Use **Up/Down** (or **j/k**) and **Enter** to select; **Esc** cancels. Select **Automatic** to clear the saved selection and use Resterm's default. The current selection is marked with `*`. The environment picker uses a temporary tab, which Zed closes after the task exits, including after canceling. It is not kept as a separate output tab.
-
-For direct access without opening the generic Task Picker, assign a shortcut in your Zed `keymap.json`:
+Because task labels are identical, **do not use `task: spawn` by name** to choose among them; Zed does not treat tags as display names. Assign the actions you want to Zed shortcuts using `task_tag`, for example in `keymap.json`:
 
 ```json
 [
   {
     "context": "Workspace && !Terminal",
     "bindings": {
-      "alt-e": ["task::Spawn", { "task_name": "Resterm: Switch Environment", "reveal_target": "dock" }]
+      "alt-e": ["task::Spawn", { "task_tag": "resterm-switch" }],
+      "alt-shift-e": ["task::Spawn", { "task_tag": "resterm-all" }]
     }
   }
 ]
 ```
 
-Zed's extension API currently does **not** let third-party extensions register arbitrary Command Palette actions or native picker dialogs. This is a named Task invoked directly via Zed's built-in action, not an independently registered Command Palette command. The temporary terminal picker uses Python 3's standard-library curses support (required only when switching environments, not when running requests).
+Environment switching uses Up/Down (or j/k), Enter to confirm, and Esc to cancel. The picker remains in the shared `Resterm` tab on exit. Running another task **replaces** that tab's previous contents; it does not preserve response history or keep the previous process alive.
 
-The choice applies to both gutter **Run request** and **Run all requests**. Zed reuses task terminal tabs by full task label. Both gutter runs and **Run all requests** now share the same **Resterm** tab. The gutter task is tagged (and therefore hidden from the generic Task Picker), while the visible **Resterm** task in that picker runs **all** requests — review mutating requests before selecting it. The environment picker is a separate temporary task because it needs keyboard input; its terminal closes when that task exits. Zed has no independent terminal reuse-group setting. It is stored per worktree under `${XDG_STATE_HOME:-~/.local/state}/zed-resterm/` (keyed by the worktree path), not in the repository. Only the environment *name* is saved; secrets and variable values are not.
+## Environment files
 
-An explicitly selected environment that isn't in the environment file fails instead of silently choosing a different one. If no file was found, an explicit selection also fails. With **Automatic** (the initial state), Resterm chooses `dev`, `default`, or `local` if present, otherwise the first named environment. The picker handles flat named-environment files, not Resterm's `$groups` format. Verify the environment shown in the run output before executing mutating requests.
+Both execution tasks and the environment picker discover the first matching file, checking the active `.http` directory before the Zed worktree root. File name precedence in each directory:
 
-See [examples/environment.http](examples/environment.http) and [examples/http-client.env.json](examples/http-client.env.json).
+1. `http-client.env.json` (JetBrains-compatible)
+2. `rest-client.env.json`
+3. `resterm.env.json`
 
-Only one environment file is loaded; `http-client.private.env.json` is **not** merged automatically. That would require additional semantics beyond Resterm's single-environment-file support.
+The run tasks pass `--env-file` explicitly when a file is found, so `http-client.env.json` works even though Resterm does not auto-discover it.
 
-## Notes
+The picker reads **named environments** from the file (no hard-coded `dev`/`prod` list). **Automatic** clears the selection and restores Resterm's default behavior. The selected environment name is saved per worktree in `${XDG_STATE_HOME:-~/.local/state}/zed-resterm/` and passed to later runs with `--env`. If the chosen environment is missing, Resterm fails instead of silently falling back. The picker currently supports flat named environments, not Resterm's `$groups` format.
 
-If another installed Zed extension also claims `.http` or `.rest`, disable it while testing to avoid language-association conflicts.
+See [examples/environment.http](examples/environment.http) and [examples/http-client.env.json](examples/http-client.env.json). `http-client.private.env.json` is not merged automatically.
 
-The stdin-backed request runs with a logical `stdin.http` under the workspace root, so relative body-file references may not resolve relative to the original `.http` file. The environment-variable transport also has platform size limits.
+## Limitations
 
-The HTTP grammar is pinned to [`feapps/tree-sitter-http`](https://github.com/feapps/tree-sitter-http), a small fork of `rest-nvim/tree-sitter-http` that fixes multiline query comments and tab-indented files.
+- Zed cannot currently register extension-defined Command Palette actions or dynamically populated native pickers; these operations use built-in tasks selected by tag.
+- For stdin requests, Resterm treats input as `stdin.http` at the workspace root, so relative body-file paths may not resolve relative to the opened file.
+- Transporting the unsaved buffer through a task environment variable has an OS-dependent size limit.
+- If another installed Zed extension also registers `.http` / `.rest`, disable it when testing to avoid file-association conflicts.
+
+The HTTP grammar is pinned to [feapps/tree-sitter-http](https://github.com/feapps/tree-sitter-http).
