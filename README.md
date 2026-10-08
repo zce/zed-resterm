@@ -24,15 +24,17 @@ resterm --version
 
 Clone this repository, then in Zed run **zed: install dev extension** and select the repository root.
 
-Open a `.http` or `.rest` file and use the gutter run button next to a request. The extension executes:
+Open a `.http` or `.rest` file and use the gutter run button next to a request. The extension passes the **current editor buffer**, including unsaved changes, through a task environment variable to Resterm stdin:
 
 ```sh
-resterm run --line "$ZED_ROW" "$ZED_FILE"
+printf '%s' "$RESTERM_SOURCE" | resterm run --line "$RESTERM_LINE" -
 ```
 
-The current buffer is saved before the command runs, so Resterm sees the latest contents.
+The task does not save the buffer. Passing the content as an environment variable (rather than expanding it into the shell command template) preserves JSON quotes and avoids interpreting request content as shell syntax.
 
-You can also open **task: spawn** and choose **Resterm: Run all requests**.
+You can also open **task: spawn** and choose **Resterm: Run all requests**. This separate task still saves the current file and runs it from disk.
+
+**Limitation:** Resterm currently treats stdin input as `stdin.http` at the workspace root, so relative body-file references may not resolve relative to the original `.http` file. The environment-variable transport also has platform size limits.
 
 ## Notes
 
