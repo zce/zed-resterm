@@ -27,13 +27,13 @@ Open a `.http` or `.rest` file. The gutter run button executes the request with 
 
 ## Tasks
 
-Each task has a **distinct label** to remain understandable in Zed's Task Picker. Tags are retained for precise invocation:
+The tasks have distinct names in Zed's Task Picker. Only the gutter task needs a tag (`resterm-request`), referenced by `languages/http/runnables.scm`:
 
-| Task | Tag | Terminal behavior |
-| --- | --- | --- |
-| `Resterm: Run request` | `resterm-request` | Gutter run; reuse its output tab |
-| `Resterm: Run all` | `resterm-all` | Save the file; reuse its output tab |
-| `Resterm: Switch environment` | `resterm-switch` | Temporary picker; close on success or cancel |
+| Task | Terminal behavior |
+| --- | --- |
+| `Resterm: Run request` | Gutter run; reuse its output tab |
+| `Resterm: Run all` | Save the file; reuse its output tab |
+| `Resterm: Switch environment` | Temporary picker; close on success or cancel |
 
 Open **task: spawn** and select a named task, or configure shortcuts using `task_name` in Zed's `keymap.json`:
 
@@ -49,7 +49,7 @@ Open **task: spawn** and select a named task, or configure shortcuts using `task
 ]
 ```
 
-Existing shortcuts based on `task_tag` (`resterm-switch`, `resterm-all`) also continue to work.
+If you previously configured `task_tag` shortcuts for `resterm-switch` or `resterm-all`, update them to the corresponding `task_name` shown above. The `resterm-request` tag remains required for the gutter action.
 
 The environment picker uses Up/Down (or j/k), Enter to select, and Esc to cancel. Zed's `hide: on_success` closes its temporary tab after a successful selection **or cancellation**; on error the tab stays open and shows the task exit status for diagnosis. Zed matches task terminals by their full label, so the two request operations have distinct reusable output tabs.
 
