@@ -8,7 +8,6 @@ A thin [Zed](https://zed.dev) extension for [Resterm](https://github.com/unkn0wn
 - Gutter action to execute the current request from the **unsaved editor buffer**
 - Run every request in the saved file
 - Switch environments dynamically using the names in the loaded environment file
-- **One reusable `Resterm` terminal tab** for all three operations
 
 ## Requirements
 
@@ -26,29 +25,33 @@ Clone this repository and in Zed run **zed: install dev extension** on its root.
 
 Open a `.http` or `.rest` file. The gutter run button executes the request with the current unsaved editor text. The task passes the editor buffer through an environment variable to Resterm stdin; it does not save the file.
 
-All three tasks intentionally have the **same label** (`Resterm`) so Zed reuses their terminal tab. Their distinct **tags** identify each operation:
+## Tasks
 
-| Tag | Action |
-| --- | --- |
-| `resterm-request` | Run request at the gutter (bound automatically) |
-| `resterm-all` | Save the current file and run all requests |
-| `resterm-switch` | Choose an environment from the current environment file |
+Each task has a **distinct label** to remain understandable in Zed's Task Picker. Tags are retained for precise invocation:
 
-Because task labels are identical, **do not use `task: spawn` by name** to choose among them; Zed does not treat tags as display names. Assign the actions you want to Zed shortcuts using `task_tag`, for example in `keymap.json`:
+| Task | Tag | Terminal behavior |
+| --- | --- | --- |
+| `Resterm: Run request` | `resterm-request` | Gutter run; reuse its output tab |
+| `Resterm: Run all` | `resterm-all` | Save the file; reuse its output tab |
+| `Resterm: Switch environment` | `resterm-switch` | Temporary picker; close on success or cancel |
+
+Open **task: spawn** and select a named task, or configure shortcuts using `task_name` in Zed's `keymap.json`:
 
 ```json
 [
   {
     "context": "Workspace && !Terminal",
     "bindings": {
-      "alt-e": ["task::Spawn", { "task_tag": "resterm-switch" }],
-      "alt-shift-e": ["task::Spawn", { "task_tag": "resterm-all" }]
+      "alt-e": ["task::Spawn", { "task_name": "Resterm: Switch environment" }],
+      "alt-shift-e": ["task::Spawn", { "task_name": "Resterm: Run all" }]
     }
   }
 ]
 ```
 
-Environment switching uses Up/Down (or j/k), Enter to confirm, and Esc to cancel. The picker remains in the shared `Resterm` tab on exit. Running another task **replaces** that tab's previous contents; it does not preserve response history or keep the previous process alive.
+Existing shortcuts based on `task_tag` (`resterm-switch`, `resterm-all`) also continue to work.
+
+The environment picker uses Up/Down (or j/k), Enter to select, and Esc to cancel. Zed's `hide: on_success` closes its temporary tab after a successful selection **or cancellation**; on error the tab stays open and shows the task exit status for diagnosis. Zed matches task terminals by their full label, so the two request operations have distinct reusable output tabs.
 
 ## Environment files
 
@@ -66,7 +69,7 @@ See [examples/environment.http](examples/environment.http) and [examples/http-cl
 
 ## Limitations
 
-- Zed cannot currently register extension-defined Command Palette actions or dynamically populated native pickers; these operations use built-in tasks selected by tag.
+- Zed cannot currently register extension-defined Command Palette actions or dynamically populated native pickers; these operations use built-in tasks.
 - For stdin requests, Resterm treats input as `stdin.http` at the workspace root, so relative body-file paths may not resolve relative to the opened file.
 - Transporting the unsaved buffer through a task environment variable has an OS-dependent size limit.
 - If another installed Zed extension also registers `.http` / `.rest`, disable it when testing to avoid file-association conflicts.

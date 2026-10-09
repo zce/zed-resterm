@@ -8,7 +8,7 @@
     "show_summary": false,
     "show_command": false,
     "save": "none",
-    "label": "Resterm",
+    "label": "Resterm: Run request",
     "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nstate_home=\"${XDG_STATE_HOME:-$HOME/.local/state}\"\nworkspace_key=$(printf '%s' \"$RESTERM_ROOT\" | cksum | tr ' ' '-')\nstate_dir=\"$state_home/zed-resterm/$workspace_key\"\nstate_file=\"$state_dir/environment\"\nselected_env=\nif [ -f \"$state_file\" ]; then\n  IFS= read -r selected_env < \"$state_file\" || { printf \"Could not read Resterm environment selection\\n\" >&2; exit 2; }\n  if [ -z \"$selected_env\" ]; then printf \"Empty Resterm environment selection\\n\" >&2; exit 2; fi\nfi\nif [ -n \"$selected_env\" ] && [ -z \"$env_file\" ]; then\n  printf \"Resterm: selected environment %s, but no environment file was found\\n\" \"$selected_env\" >&2\n  exit 2\nfi\nset -- run --line \"$RESTERM_LINE\"\nif [ -n \"$env_file\" ]; then set -- \"$@\" --env-file \"$env_file\"; fi\nif [ -n \"$selected_env\" ]; then\n  printf \"Environment: %s\\n\" \"$selected_env\" >&2\n  set -- \"$@\" --env \"$selected_env\"\nfi\nprintf '%s' \"$RESTERM_SOURCE\" | resterm \"$@\" -",
     "tags": [
       "resterm-request"
@@ -29,7 +29,7 @@
     "show_summary": false,
     "show_command": false,
     "save": "current",
-    "label": "Resterm",
+    "label": "Resterm: Run all",
     "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nstate_home=\"${XDG_STATE_HOME:-$HOME/.local/state}\"\nworkspace_key=$(printf '%s' \"$RESTERM_ROOT\" | cksum | tr ' ' '-')\nstate_dir=\"$state_home/zed-resterm/$workspace_key\"\nstate_file=\"$state_dir/environment\"\nselected_env=\nif [ -f \"$state_file\" ]; then\n  IFS= read -r selected_env < \"$state_file\" || { printf \"Could not read Resterm environment selection\\n\" >&2; exit 2; }\n  if [ -z \"$selected_env\" ]; then printf \"Empty Resterm environment selection\\n\" >&2; exit 2; fi\nfi\nif [ -n \"$selected_env\" ] && [ -z \"$env_file\" ]; then\n  printf \"Resterm: selected environment %s, but no environment file was found\\n\" \"$selected_env\" >&2\n  exit 2\nfi\nset -- run --all\nif [ -n \"$env_file\" ]; then set -- \"$@\" --env-file \"$env_file\"; fi\nif [ -n \"$selected_env\" ]; then\n  printf \"Environment: %s\\n\" \"$selected_env\" >&2\n  set -- \"$@\" --env \"$selected_env\"\nfi\nresterm \"$@\" \"$RESTERM_FILE\"",
     "env": {
       "RESTERM_FILE": "$ZED_FILE",
@@ -45,11 +45,11 @@
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
     "reveal": "always",
-    "hide": "never",
-    "show_summary": false,
+    "hide": "on_success",
+    "show_summary": true,
     "show_command": false,
     "save": "none",
-    "label": "Resterm",
+    "label": "Resterm: Switch environment",
     "command": "env_file=\nfor dir in \"$RESTERM_DIR\" \"$RESTERM_ROOT\"; do\n  for name in http-client.env.json rest-client.env.json resterm.env.json; do\n    if [ -f \"$dir/$name\" ]; then\n      env_file=\"$dir/$name\"\n      break 2\n    fi\n  done\ndone\nstate_home=\"${XDG_STATE_HOME:-$HOME/.local/state}\"\nworkspace_key=$(printf '%s' \"$RESTERM_ROOT\" | cksum | tr ' ' '-')\nstate_dir=\"$state_home/zed-resterm/$workspace_key\"\nstate_file=\"$state_dir/environment\"\numask 077\nexec python3 -c \"$RESTERM_PICKER_CODE\" \"$env_file\" \"$state_file\"",
     "env": {
       "RESTERM_DIR": "$ZED_DIRNAME",
